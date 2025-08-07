@@ -416,7 +416,7 @@ if (!todayRecord || (todayMonth === 6 && todayYear === 2025)) return;
     list.appendChild(card);
   });
 
-  // === Monthly Summary (basic) ===
+  
  
    
     
@@ -448,46 +448,66 @@ if (!todayRecord || (todayMonth === 6 && todayYear === 2025)) return;
 
      let prevPercent = 100;
 
- 
+ let presentStreak = 0; // ✅ Move here (before monthSequence.forEach)
+
 monthSequence.forEach(([month, days]) => {
   if (month === "July 2025") return;
 
 
   let presentDays = 0, absentDays = 0, halfDays = 0, odHours = 0, workingDays = 0;
 
-  Object.values(days).forEach(statuses => {
-    const hourStatus = Array(7).fill("");
-    statuses.forEach((st, idx) => {
-      if (idx < 7) hourStatus[idx] = getStatusLetter(st);
-    });
+ 
+   
 
-    const presentCount = hourStatus.filter(st => st === "P" || st === "OD").length;
-    const absentCount = hourStatus.filter(st => st === "A").length;
-    const holidayCount = hourStatus.filter(st => st === "H").length;
-    const odCount = hourStatus.filter(st => st === "OD").length;
+Object.entries(days)
+  .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
+  .forEach(([date, statuses]) => {
 
-    odHours += odCount;
-
-    // ❗ Skip full holidays
-    if (holidayCount === 7) return;
-
-    // Count as working day if not full holiday
-    workingDays++;
-
-    if (presentCount >= 6) {
-      presentDays++;
-      prevPercent = Math.min(100, prevPercent + 1.5);
-    } else if (absentCount >= 6) {
-      absentDays++;
-      prevPercent = Math.max(0, prevPercent - 3);
-    } else if (presentCount >= 1 && presentCount < 6) {
-      halfDays++;
-      prevPercent = Math.min(100, prevPercent + 0.5);
-    } else {
-      halfDays++;
-      prevPercent = Math.min(100, prevPercent + 0.5);
-    }
+  const hourStatus = Array(7).fill("");
+  statuses.forEach((st, idx) => {
+    if (idx < 7) hourStatus[idx] = getStatusLetter(st);
   });
+
+  const presentCount = hourStatus.filter(st => st === "P" || st === "OD").length;
+  const absentCount = hourStatus.filter(st => st === "A").length;
+  const holidayCount = hourStatus.filter(st => st === "H").length;
+  const odCount = hourStatus.filter(st => st === "OD").length;
+
+  odHours += odCount;
+
+  // ❗ Skip full holidays
+  if (holidayCount === 7) {
+    presentStreak = 0; // reset streak if holiday
+    return;
+  }
+
+  // Count as working day if not full holiday
+  workingDays++;
+
+   if (presentCount >= 6) {
+  presentDays++;
+  
+  // +1% for every 2 fully present days
+  if (presentDays % 2 === 0) {
+    prevPercent = Math.min(100, prevPercent + 1);
+  }
+
+} else if (absentCount >= 6) {
+  absentDays++;
+  prevPercent = Math.max(0, prevPercent - 3);
+
+} else if (presentCount >= 1 && presentCount < 6) {
+  halfDays++;
+  prevPercent = Math.min(100, prevPercent + 0.5);
+
+} else {
+  halfDays++;
+  prevPercent = Math.min(100, prevPercent + 0.5);
+}
+
+
+});
+
 
   const totalDays = presentDays + absentDays + halfDays;
   const effectivePresent = presentDays + (halfDays * 0.5);
