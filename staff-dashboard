@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Faculty Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f3e8ff;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .left-section {
+      display: flex;
+      align-items: center;
+    }
+
+    .profile-photo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 10px;
+    }
+
+    .welcome-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .date {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .menu {
+      position: relative;
+    }
+
+    .hamburger {
+      font-size: 24px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 30px;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      padding: 5px 10px;
+      z-index: 1000;
+      min-width: 100px;
+    }
+
+    .dropdown button {
+      background: none;
+      border: none;
+      color: red;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      padding: 8px 0;
+      text-align: center;
+    }
+
+    .dropdown button:hover {
+      background-color: #fdd;
+    }
+
+    .hours {
+      margin: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .hour {
+      background-color: #d1c4e9;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+      transition: background-color 0.3s;
+    }
+
+    .hour:hover {
+      background-color: #b39ddb;
+    }
+
+    .classes {
+      margin: 0 20px;
+    }
+
+    .class-item {
+      background-color: #ce93d8;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s;
+    }
+
+    .class-item:hover {
+      background-color: #ba68c8;
+    }
+
+    #studentsSection {
+      margin: 20px;
+    }
+
+    .student {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #ede7f6;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .student-name {
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .buttons button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #6a1b9a;
+      color: white;
+      user-select: none;
+      transition: background-color 0.3s;
+    }
+
+    .buttons button:hover {
+      background-color: #4a0072;
+    }
+
+    .cross-button {
+      background-color: #e53935;
+      margin-left: 5px;
+    }
+
+    .cross-button:hover {
+      background-color: #b71c1c;
+    }
+    .hour.selected {
+  background-color: #9575cd !important;
+}
+
+  </style>
+</head>
+<body>
+  <span id="faculty-name" style="display:none;">Dr. Ramesh</span>
+
+
+<div class="header">
+  <div class="left-section">
+    <img id="profilePic" class="profile-photo" src="" alt="Profile" />
+    <div class="welcome-info">
+      <div id="welcomeText">Welcome, Faculty</div>
+      <div class="date" id="currentDate"></div>
+    </div>
+  </div>
+  <div class="menu">
+    <button class="hamburger" onclick="toggleDropdown()">☰</button>
+    <div class="dropdown" id="menuDropdown">
+      <button onclick="logout()">Logout</button>
+       <button id="exportExcelBtn">Export Attendance to Excel</button>
+    </div>
+  </div>
+</div>
+
+<div class="hours">
+  <div class="hour" onclick="showClasses('1st Hour')">1st Hour</div>
+  <div class="hour" onclick="showClasses('2nd Hour')">2nd Hour</div>
+  <div class="hour" onclick="showClasses('3rd Hour')">3rd Hour</div>
+  <div class="hour" onclick="showClasses('4th Hour')">4th Hour</div>
+  <div class="hour" onclick="showClasses('5th Hour')">5th Hour</div>
+  <div class="hour" onclick="showClasses('6th Hour')">6th Hour</div>
+  <div class="hour" onclick="showClasses('7th Hour')">7th Hour</div>
+</div>
+
+<div class="classes" id="classesContainer"></div>
+
+
+<div id="studentsSection"></div>
+
+
+
+<!-- Firebase -->
+
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtkza2N7BI9ULP_sbWXt2GhhGxl5in0Zg",
+    authDomain: "reat-3d59e.firebaseapp.com",
+    projectId: "reat-3d59e",
+    appId: "1:360948191569:web:cdca6f567a6b5607e3c370"
+  };
+  firebase.initializeApp(firebaseConfig);
+   const db = firebase.firestore();
+   let attendanceStatusMap = {};  // { "class-hour": { roll1: "Present", ... } }
+
+</script>
+
+
+
+<script>
+  window.onload = () => {
+    const name = localStorage.getItem('facultyName');
+    const photo = localStorage.getItem('facultyPhoto');
+
+    if (!name) {
+      // No login session found, redirect to login page
+      location.href = "login.html";
+      return;
+    }
+
+    // Show welcome info and profile photo
+    document.getElementById('welcomeText').textContent = `Welcome, ${name}`;
+    document.getElementById('profilePic').src = photo || "https://via.placeholder.com/50";
+
+    // Show current date
+    const date = new Date();
+    document.getElementById('currentDate').textContent = date.toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  };
+
+  function toggleDropdown() {
+    const dropdown = document.getElementById("menuDropdown");
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  }
+
+  function logout() {
+    if (confirm("Are you sure you want to log out?")) {
+      // Clear localStorage
+      localStorage.removeItem('facultyName');
+      localStorage.removeItem('facultyPhoto');
+
+      // Firebase sign out
+      firebase.auth().signOut().then(() => {
+        location.href = "login.html";
+      }).catch((error) => {
+        alert("Logout failed. Try again.");
+      });
+    }
+  }
+
+ function showClasses(hour) {
+  // Remove previous selection
+  document.querySelectorAll('.hour').forEach(el => el.classList.remove('selected'));
+  event.target.classList.add('selected');
+
+  const classMap = {
+    "1st Hour": [
+      { className: "1st Hour - CSE B", subjectName: "Machine Learning", subjectCode: "U23CST12" }
+    ],
+    "2nd Hour": [
+      { className: "2nd Hour - CSE B", subjectName: "Computer Networks", subjectCode: "U23CST13" }
+    ],
+    "3rd Hour": [
+      { className: "3rd Hour - CSE B", subjectName: "Golang", subjectCode: "U23CST02" }
+    ],
+    "4th Hour": [
+      { className: "4th Hour - CSE B", subjectName: "UI/UX", subjectCode: "U23CST03" }
+    ],
+    "5th Hour": [
+      { className: "5th Hour - CSE B", subjectName: "Design Thinking", subjectCode: "U23OE201" }
+    ],
+    "6th Hour": [
+      { className: "6th Hour - CSE B", subjectName: "ML Lab", subjectCode: "U23CSP09" }
+    ],
+    "7th Hour": [
+      { className: "7th Hour - CSE B", subjectName: "Networks Lab", subjectCode: "U23CSP10" }
+    ]
+  };
+
+  const classes = classMap[hour] || [];
+
+  const container = document.getElementById("classesContainer");
+  container.innerHTML = ""; // Clear previous
+
+  classes.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'class-item';
+    div.innerHTML = `
+      <div>${c.className}</div>
+      <div style="font-size: 0.9em; color: #333; margin-top: 4px;">
+        Subject: ${c.subjectName} <br/>
+        Code: ${c.subjectCode}
+      </div>
+    `;
+    div.onclick = () => showStudents(c.className);
+    container.appendChild(div);
+  });
+
+  document.getElementById("studentsSection").innerHTML = "";
+}
+
+
+
+
+
+  function showStudents(className) {
+  const studentsSection = document.getElementById('studentsSection');
+  const hourText = document.querySelector('.hour.selected')?.textContent || "Unknown Hour";
+const mapKey = `${className}-${hourText}`;
+
+// Ensure status map exists for this class-hour
+if (!attendanceStatusMap[mapKey]) {
+  attendanceStatusMap[mapKey] = {};
+}
+const currentMap = attendanceStatusMap[mapKey];
+
+
+  // Static student data — replace with dynamic data if needed
+  const students = [
+    { roll: "23BCS062", name: "Madhu" },
+    { roll: "23BCS063", name: "Monika" },
+    { roll: "23BCS064", name: "Mridula" },
+    { roll: "23BCS065", name: "Sangari" },
+    { roll: "23BCS66", name: "Renuga" },
+    { roll: "23BCS067", name: "Arif" },
+    { roll: "23BCS068", name: "Karthick" }
+  ];
+
+  // 💡 Insert button here
+ studentsSection.innerHTML = `
+  <h3>${className}</h3>
+  <div style="margin-bottom: 10px;">
+   <button onclick="markAllAbsent()" style="background-color:#ff9800; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;">
+  Mark All Absent
+</button>
+
+    <button onclick="resetAllStatus()" style="background-color:#f44336; color:white; padding:8px 12px; border:none; border-radius:5px; margin-left: 10px; cursor:pointer;">
+      Reset All
+    </button>
+  </div>
+
+  <div id="statusSummary" style="margin-bottom: 10px; font-weight: bold; color: #333;">
+    Present: 0 | Absent: 0 | OD: 0 | Holiday: 0
+  </div>
+`;
+
+
+
+  // Add each student entry
+  students.forEach(student => {
+    const div = document.createElement('div');
+    div.className = 'student';
+    div.innerHTML = `
+      <div class="student-name">${student.roll} - ${student.name}</div>
+      <div class="buttons" id="btns-${student.roll}">
+  ${currentMap[student.roll] 
+    ? `<button style="background-color: #6a1b9a; color: white; cursor: default;">${currentMap[student.roll]}</button>
+       <button class="cross-button" onclick="resetStatus('${student.roll}')">❌</button>`
+    : getButtonsHTML(student.roll)}
+</div>
+
+    `;
+   
+
+    studentsSection.appendChild(div);
+  });
+  attendanceStatusMap = {}; // Clear map on reload
+updateStatusSummary();    // Reset count to 0
+
+}
+
+
+  function getButtonsHTML(roll) {
+    return `
+      <button onclick="selectStatus('${roll}', 'Present')">Present</button>
+      <button onclick="selectStatus('${roll}', 'Absent')">Absent</button>
+      <button onclick="selectStatus('${roll}', 'OD')">OD</button>
+      
+     
+
+    `;
+  }
+
+
+async function selectStatus(roll, status) {
+  const container = document.getElementById(`btns-${roll}`);
+  container.innerHTML = `
+    <button style="background-color: #6a1b9a; color: white; cursor: default;">${status}</button>
+    <button class="cross-button" onclick="resetStatus('${roll}')">❌</button>
+  `;
+  attendanceStatusMap[roll] = status; // ✅ update map
+  updateStatusSummary(); // ✅ update count
+
+
+  const className = document.querySelector('#studentsSection h3')?.textContent || "Unknown Class";
+  const hourText = document.querySelector('.hour.selected')?.textContent || "Unknown Hour";
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const facultyName = localStorage.getItem('facultyName') || "Unknown Faculty";
+
+  const docId = `${className}-${hourText}-${currentDate}`;
+
+  // Extract subjectCode from the selected class item
+    const selectedClassItem = Array.from(document.querySelectorAll(".class-item"))
+    .find(el => el.innerText.includes(className));
+
+  let subjectCode = "UnknownSubject";
+  let subjectName = "UnknownSubject";
+
+  if (selectedClassItem) {
+    const codeMatch = selectedClassItem.innerText.match(/Code:\s*(\w+)/);
+    const nameMatch = selectedClassItem.innerText.match(/Subject:\s*(.+)\s+Code:/);
+
+    if (codeMatch) subjectCode = codeMatch[1];
+    if (nameMatch) subjectName = nameMatch[1].trim();
+  }
+
+
+  try {
+    // ✅ Update the faculty's attendanceRecords (existing)
+    const docRef = db.collection("attendanceRecords").doc(docId);
+    const docSnap = await docRef.get();
+    let existingRecords = {};
+    if (docSnap.exists) {
+      existingRecords = docSnap.data().records || {};
+    }
+    existingRecords[roll] = status;
+
+    await docRef.set({
+      className,
+      hour: hourText,
+      date: currentDate,
+      markedBy: facultyName,
+      records: existingRecords
+    }, { merge: true });
+
+    // ✅ Also update student's personal attendance (for student dashboard)
+    const studentRef = db.collection("studentsAttendance").doc(roll)
+                         .collection("records").doc(`${currentDate}_${subjectCode}`);
+
+    await studentRef.set({
+      date: currentDate,
+      subjectName:subjectName,
+      subject: subjectCode,
+      status: status,
+      faculty: facultyName,
+      hour: hourText,
+      class: className
+    });
+   
+
+
+    console.log("Student-specific attendance synced successfully.");
+  } catch (error) {
+    console.error("Error syncing attendance:", error);
+  }
+}
+
+
+ async function resetStatus(roll) {
+  const container = document.getElementById(`btns-${roll}`);
+  container.innerHTML = getButtonsHTML(roll);
+  delete attendanceStatusMap[roll]; // ✅ remove from map
+  updateStatusSummary(); // ✅ refresh count
+
+
+  const className = document.querySelector('#studentsSection h3')?.textContent || "Unknown Class";
+  const hourText = document.querySelector('.hour.selected')?.textContent || "Unknown Hour";
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const docId = `${className}-${hourText}-${currentDate}`;
+
+  try {
+    const docRef = db.collection("attendanceRecords").doc(docId);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+      let data = docSnap.data();
+      if (data.records && data.records[roll]) {
+        delete data.records[roll];
+        await docRef.set({
+          records: data.records
+        }, { merge: true });
+        console.log("Attendance reset for", roll);
+      }
+    }
+  } catch (error) {
+    console.error("Error resetting attendance:", error);
+  }
+}
+async function exportAttendanceToExcel() {
+  const className = document.querySelector('#studentsSection h3')?.textContent || "Unknown Class";
+  const hourText = document.querySelector('.hour.selected')?.textContent || "Unknown Hour";
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const docId = `${className}-${hourText}-${currentDate}`;
+
+  try {
+    const docRef = db.collection("attendanceRecords").doc(docId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      alert("No attendance data found for the selected class, hour, and date.");
+      return;
+    }
+
+    const data = docSnap.data();
+    const records = data.records || {};
+
+    // Transform records object to array for SheetJS
+    const worksheetData = [["Roll Number", "Attendance Status"]];
+    for (const [roll, status] of Object.entries(records)) {
+      worksheetData.push([roll, status]);
+    }
+
+    // Create worksheet & workbook
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+    // Export file
+    XLSX.writeFile(wb, `${className}_${hourText}_${currentDate}_Attendance.xlsx`);
+
+  } catch (error) {
+    console.error("Error exporting attendance to Excel:", error);
+  }
+}
+
+function fetchAttendanceHistory(studentRoll) {
+  db.collection("records")
+    .where("roll", "==", studentRoll)
+    .orderBy("date", "desc")
+    .get()
+    .then((snapshot) => {
+      const attendanceRecords = [];
+      snapshot.forEach(doc => {
+        attendanceRecords.push(doc.data());
+      });
+      console.log("Attendance history:", attendanceRecords);
+      // You can now display this on the UI as needed
+    })
+    .catch(error => {
+      console.error("Error fetching attendance history:", error);
+    });
+}
+function markAttendance(studentRoll, date, status) {
+  const studentRef = db.collection("students").doc(studentRoll);
+
+  // Update attendance object with new date-status pair
+  studentRef.set({
+    attendance: {
+      [date]: status
+    }
+  }, { merge: true });  // Merge to keep existing attendance data intact
+}
+function getAttendanceSheet(studentRoll) {
+  const studentRef = db.collection("students").doc(studentRoll);
+  studentRef.get()
+    .then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        console.log("Attendance sheet:", data.attendance);
+        // Render this as a table (like Excel)
+      } else {
+        console.log("No attendance data found.");
+      }
+    });
+}
+function markAllAbsent() {
+  const studentButtons = document.querySelectorAll('.buttons');
+  studentButtons.forEach(btnGroup => {
+    const roll = btnGroup.id.split('-')[1]; // Extract roll from "btns-ROLL"
+    selectStatus(roll, 'Absent');
+  });
+}
+
+
+function resetAllStatus() {
+  const studentButtons = document.querySelectorAll('.buttons');
+  studentButtons.forEach(btnGroup => {
+    const roll = btnGroup.id.split('-')[1]; // Extract roll number
+    resetStatus(roll); // Calls your existing resetStatus() function
+  });
+
+  // Clear the map and update summary after a short delay
+  attendanceStatusMap = {};
+  setTimeout(() => updateStatusSummary(), 300);
+}
+
+
+
+
+  // Hide dropdown when clicking outside
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("menuDropdown");
+    const menuButton = document.querySelector(".hamburger");
+
+    if (!dropdown.contains(event.target) && !menuButton.contains(event.target)) {
+      dropdown.style.display = "none";
+    }
+  });
+   document.getElementById('exportExcelBtn').addEventListener('click', exportAttendanceToExcel);
+  
+function updateStatusSummary() {
+  let present = 0, absent = 0, od = 0;
+
+  Object.values(attendanceStatusMap).forEach(status => {
+    if (status === "Present") present++;
+    else if (status === "Absent") absent++;
+    else if (status === "OD") od++;
+  });
+
+  const summary = document.getElementById("statusSummary");
+  if (summary) {
+    summary.textContent = `Present: ${present} | Absent: ${absent} | OD: ${od}`;
+  }
+}
+
+
+
+</script>
+
+</body>
+</html>
