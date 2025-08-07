@@ -320,12 +320,6 @@ html += `<tr><td>${date} <br/><small>(${dayName})</small></td>`;
     }
   }
 
-  
-
-    
-
-
-
   async function loadAttendance(roll) {
   const list = document.getElementById("attendanceList");
   const summaryCounts = document.getElementById("attendanceSummaryCounts");
@@ -363,43 +357,34 @@ html += `<tr><td>${date} <br/><small>(${dayName})</small></td>`;
     list.innerHTML = "No attendance records found.";
     return;
   }
-
-  const attendanceMap = {};
+ const attendanceMap = {};
   const subjectPercentMap = {};
   const sortedDocs = snapshot.docs.map(doc => doc.data()).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  sortedDocs.forEach(data => {
+sortedDocs.forEach(data => {
     const subject = data.subject || "Unknown";
     const subjectName = data.subjectName || "Subject";
     const status = (data.status || "").trim().toUpperCase();
     const dateStr = new Date(data.date).toISOString().split("T")[0];
     const key = `${subject}|${subjectName}|${data.hour || "Unknown Hour"}`;
     let prevPercent = subjectPercentMap[key] ?? 100;
-
     if (["PRESENT", "P"].includes(status)) prevPercent = Math.min(100, prevPercent + 1);
     else if (["ABSENT", "A"].includes(status)) prevPercent = Math.max(0, prevPercent - 2);
     else if (["HALF", "HALF DAY PRESENT"].includes(status)) prevPercent = Math.min(100, prevPercent + 0.5);
-
     subjectPercentMap[key] = prevPercent;
-
     if (!attendanceMap[key]) {
       attendanceMap[key] = { subject: subjectName, history: [] };
     }
     attendanceMap[key].history.push({ date: dateStr, percent: prevPercent, status });
   });
-
   // === Daily Display ===
   list.innerHTML = "";
   const todayStr = new Date().toISOString().split("T")[0];
 Object.entries(attendanceMap).forEach(([key, data]) => {
   const todayRecord = data.history.find(h => h.date === todayStr);
-  
- const todayDate = new Date();
+   const todayDate = new Date();
 const todayMonth = todayDate.getMonth();      // 0 = Jan
 const todayYear = todayDate.getFullYear();
-
 if (!todayRecord || (todayMonth === 6 && todayYear === 2025)) return;
-
     if (!todayRecord) return;
     const [subject, subjectName, hour] = key.split("|");
     const percent = todayRecord.percent;
@@ -412,15 +397,8 @@ if (!todayRecord || (todayMonth === 6 && todayYear === 2025)) return;
   <strong>Hour:</strong> ${hour}<br/>
   <strong>Status:</strong> ${todayRecord.status}
 `;
-
     list.appendChild(card);
   });
-
-  
- 
-   
-    
-
   // === Monthly History with correct counting and half-day logic ===
   const historyTracker = {};
   snapshot.forEach(doc => {
@@ -428,70 +406,47 @@ if (!todayRecord || (todayMonth === 6 && todayYear === 2025)) return;
     const status = (data.status || "").trim().toUpperCase();
     const dateObj = new Date(data.date);
     const dateStr = dateObj.toLocaleDateString("en-CA"); // same format
-
-    const monthKey = `${dateObj.toLocaleString('default', { month: 'long' })} ${dateObj.getFullYear()}`;
-
-    if (!historyTracker[monthKey]) historyTracker[monthKey] = {};
+ const monthKey = `${dateObj.toLocaleString('default', { month: 'long' })} ${dateObj.getFullYear()}`;
+if (!historyTracker[monthKey]) historyTracker[monthKey] = {};
     if (!historyTracker[monthKey][dateStr]) historyTracker[monthKey][dateStr] = [];
     historyTracker[monthKey][dateStr].push(status);
   });
-
-
-  monthContainer.innerHTML = "<h3>📅 Monthly Attendance History</h3>";
+ monthContainer.innerHTML = "<h3>📅 Monthly Attendance History</h3>";
   const monthSequence = Object.entries(historyTracker).sort((a, b) => {
     const dateA = new Date(`${a[0]} 1`);
     const dateB = new Date(`${b[0]} 1`);
     return dateA - dateB;
   });
-
-  
-
-     let prevPercent = 100;
-
- let presentStreak = 0; // ✅ Move here (before monthSequence.forEach)
-
+ let prevPercent = 100;
+ let presentStreak = 0; // ✅ 
 monthSequence.forEach(([month, days]) => {
   if (month === "July 2025") return;
-
-
-  let presentDays = 0, absentDays = 0, halfDays = 0, odHours = 0, workingDays = 0;
-
- 
-   
-
+ let presentDays = 0, absentDays = 0, halfDays = 0, odHours = 0, workingDays = 0;
 Object.entries(days)
   .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
   .forEach(([date, statuses]) => {
-
   const hourStatus = Array(7).fill("");
   statuses.forEach((st, idx) => {
     if (idx < 7) hourStatus[idx] = getStatusLetter(st);
   });
-
   const presentCount = hourStatus.filter(st => st === "P" || st === "OD").length;
   const absentCount = hourStatus.filter(st => st === "A").length;
   const holidayCount = hourStatus.filter(st => st === "H").length;
   const odCount = hourStatus.filter(st => st === "OD").length;
-
   odHours += odCount;
-
   // ❗ Skip full holidays
   if (holidayCount === 7) {
     presentStreak = 0; // reset streak if holiday
     return;
   }
-
   // Count as working day if not full holiday
   workingDays++;
-
    if (presentCount >= 6) {
   presentDays++;
-  
-  // +1% for every 2 fully present days
+    // +1% for every 2 fully present days
   if (presentDays % 2 === 0) {
     prevPercent = Math.min(100, prevPercent + 1);
   }
-
 } else if (absentCount >= 6) {
   absentDays++;
   prevPercent = Math.max(0, prevPercent - 3);
@@ -504,16 +459,11 @@ Object.entries(days)
   halfDays++;
   prevPercent = Math.min(100, prevPercent + 0.5);
 }
-
-
 });
-
-
   const totalDays = presentDays + absentDays + halfDays;
   const effectivePresent = presentDays + (halfDays * 0.5);
   const displayPercent = totalDays > 0 ? (effectivePresent / totalDays) * 100 : 100;
   const percentClass = prevPercent < 75 ? "low-attendance" : "good-attendance";
-
   // ✅ Add Total Working Days here in history section
   monthContainer.innerHTML += `
     <div style="margin-bottom: 12px; padding: 10px; background: #fff; border-radius: 8px; border-left: 4px solid #6200ea; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
