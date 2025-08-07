@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Faculty Login</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    body {
+      background-color: #f3e8ff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-container {
+      background: white;
+      padding: 25px 30px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      width: 350px;
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #6a1b9a;
+      font-weight: 700;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .input-group svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      fill: #6a1b9a;
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px 12px 10px 38px; /* left padding for icon */
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    input[type="file"] {
+      padding-left: 10px; /* file inputs have built-in buttons, so reduce left padding */
+      padding-right: 12px;
+    }
+
+    .toggle-password {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .toggle-password input {
+      padding-left: 38px;
+    }
+
+    .toggle-password span {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none;
+      font-size: 18px;
+      color: #6a1b9a;
+      opacity: 0.85;
+      transition: opacity 0.3s;
+    }
+    .toggle-password span:hover {
+      opacity: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #6a1b9a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #7e31bd;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <h2>Faculty Login</h2>
+
+  <div class="input-group">
+    <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    <input type="text" id="name" placeholder="Full Name" required />
+  </div>
+
+  <div class="input-group">
+    <svg viewBox="0 0 24 24"><path d="M21 19V7a2 2 0 0 0-2-2h-4l-2-2h-4L7 5H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+    <input type="file" id="photo" accept="image/*" required />
+  </div>
+
+  <div class="input-group">
+    <svg viewBox="0 0 24 24"><path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-3.3 0-6 2.7-6 6h12c0-3.3-2.7-6-6-6z"/></svg>
+    <input type="email" id="email" placeholder="Email" required />
+  </div>
+
+  <div class="toggle-password input-group">
+    <svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+    <input type="password" id="password" placeholder="Password" required />
+    <span onclick="togglePassword()">👁️</span>
+  </div>
+
+  <button onclick="login()">Login</button>
+</div>
+
+<script>
+  // Firebase config (replace with your actual config)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtkza2N7BI9ULP_sbWXt2GhhGxl5in0Zg",
+    authDomain: "reat-3d59e.firebaseapp.com",
+    projectId: "reat-3d59e",
+    appId: "1:360948191569:web:cdca6f567a6b5607e3c370"
+  };
+  
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // Toggle password visibility
+  function togglePassword() {
+    const pwd = document.getElementById("password");
+    pwd.type = pwd.type === "password" ? "text" : "password";
+  }
+
+  // Login function
+  function login() {
+    const name = document.getElementById("name").value.trim();
+    const photoInput = document.getElementById("photo");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!name || !photoInput.files.length || !email || !password) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    // Read the uploaded image as base64 string
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const photoURL = e.target.result;
+
+      // Save name and photo to localStorage
+      localStorage.setItem('facultyName', name);
+      localStorage.setItem('facultyPhoto', photoURL);
+
+      // Authenticate using Firebase
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          // Redirect on successful login
+          window.location.href = "staff-dashboard.html";
+        })
+        .catch((error) => {
+          alert("Login failed: " + error.message);
+        });
+    };
+    reader.readAsDataURL(photoInput.files[0]);
+  }
+</script>
+
+</body>
+</html>
